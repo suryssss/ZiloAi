@@ -158,22 +158,21 @@ export const useAnswers = (id: string) => {
   >([])
   const [loading, setLoading] = useState<boolean>(false)
 
-  const onGetCustomerAnswers = async () => {
-    try {
-      setLoading(true)
-      const answer = await onGetAllCustomerResponses(id)
-      setLoading(false)
-      if (answer) {
-        setAnswers(answer)
-      }
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
   useEffect(() => {
+    const onGetCustomerAnswers = async () => {
+      try {
+        setLoading(true)
+        const answer = await onGetAllCustomerResponses(id)
+        setLoading(false)
+        if (answer) {
+          setAnswers(answer)
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    }
     onGetCustomerAnswers()
-  }, [])
+  }, [id])
 
   return { answers, loading }
 }
@@ -182,22 +181,21 @@ export const useEditEmail = (id: string) => {
   const [loading, setLoading] = useState<boolean>(false)
   const [template, setTemplate] = useState<string>('')
 
-  const onGetTemplate = async (id: string) => {
-    try {
-      setLoading(true)
-      const email = await onGetEmailTemplate(id)
-      if (email) {
-        setTemplate(email)
-      }
-      setLoading(false)
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
   useEffect(() => {
+    const onGetTemplate = async (id: string) => {
+      try {
+        setLoading(true)
+        const email = await onGetEmailTemplate(id)
+        if (email) {
+          setTemplate(email)
+        }
+        setLoading(false)
+      } catch (error) {
+        console.log(error)
+      }
+    }
     onGetTemplate(id)
-  }, [])
+  }, [id])
 
   return { loading, template }
 }

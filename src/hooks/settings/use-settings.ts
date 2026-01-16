@@ -183,18 +183,17 @@ export const useHelpDesk = (id: string) => {
     }
   })
 
-  const onGetQuestions = async () => {
-    setLoading(true)
-    const questions = await onGetAllHelpDeskQuestions(id)
-    if (questions) {
-      setIsQuestions(questions.questions)
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    const onGetQuestions = async () => {
+      setLoading(true)
+      const questions = await onGetAllHelpDeskQuestions(id)
+      if (questions) {
+        setIsQuestions(questions.questions)
+        setLoading(false)
+      }
+    }
     onGetQuestions()
-  }, [])
+  }, [id])
 
   return {
     register,
@@ -234,18 +233,17 @@ export const useFilterQuestions = (id: string) => {
     }
   })
 
-  const onGetQuestions = async () => {
-    setLoading(true)
-    const questions = await onGetAllFilterQuestions(id)
-    if (questions) {
-      setIsQuestions(questions.questions)
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    const onGetQuestions = async () => {
+      setLoading(true)
+      const questions = await onGetAllFilterQuestions(id)
+      if (questions) {
+        setIsQuestions(questions.questions)
+        setLoading(false)
+      }
+    }
     onGetQuestions()
-  }, [])
+  }, [id])
 
   return {
     loading,
