@@ -16,10 +16,11 @@ const Page = async (props: Props) => {
   const user = await currentUser()
 
   if (!user) return null
+  
   const domainBookings = await onGetAllBookingsForCurrentUser(user.id)
   const today = new Date()
 
-  if (!domainBookings)
+  if (!domainBookings || !domainBookings.bookings)
     return (
       <div className="w-full flex justify-center">
         <p>No Appointments</p>
