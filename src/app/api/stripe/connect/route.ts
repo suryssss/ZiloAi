@@ -145,10 +145,18 @@ export async function GET() {
         }
       }
     }
+    return NextResponse.json(
+      { error: 'Failed to complete account setup' },
+      { status: 500 }
+    )
   } catch (error) {
     console.error(
       'An error occurred when calling the Stripe API to create an account:',
       error
+    )
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
     )
   }
 }
