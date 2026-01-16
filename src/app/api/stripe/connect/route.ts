@@ -8,10 +8,18 @@ export const runtime = 'nodejs'
 
 export async function GET() {
   try {
+    // Skip during build time when env vars might not be available
+    if (!process.env.STRIPE_SECRET) {
+      return NextResponse.json(
+        { error: 'Stripe not configured' },
+        { status: 503 }
+      )
+    }
+
     const user = await currentUser()
     if (!user) return new NextResponse('User not authenticated')
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET!, {
+    const stripe = new Stripe(process.env.STRIPE_SECRET, {
       typescript: true,
       apiVersion: '2024-04-10',
     })
