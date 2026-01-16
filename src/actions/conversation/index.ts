@@ -167,7 +167,7 @@ export const onOwnerSendMessage = async (
         message: {
           create: {
             message,
-            role,
+            role: role as any,
           },
         },
       },
