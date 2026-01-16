@@ -24,7 +24,7 @@ export const onStoreConversations = async (
       message: {
         create: {
           message,
-          role,
+          role: role as any,
         },
       },
     },
