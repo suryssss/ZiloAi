@@ -7,8 +7,10 @@ import Stripe from 'stripe'
 export const dynamic = 'force-dynamic'
 
 export async function POST() {
+  console.log('--- STRIPE CONNECT START ---')
   const stripeSecret = process.env.STRIPE_SECRET
   if (!stripeSecret) {
+      console.error('MISSING STRIPE_SECRET')
       return new NextResponse('Stripe not configured', { status: 500 })
   }
   
@@ -20,30 +22,42 @@ export async function POST() {
   try {
     const user = await currentUser()
     if (!user) {
+      console.error('USER NOT AUTHENTICATED')
       return new NextResponse('User not authenticated', { status: 401 })
     }
+    console.log(`User Authenticated: ${user.id}`)
 
     const dbUser = await client.user.findUnique({
       where: { clerkId: user.id },
     })
+    console.log(`DB User Found: ${!!dbUser}`)
 
     if (!dbUser) {
       return new NextResponse('User not found', { status: 404 })
     }
 
     let stripeAccountId = dbUser.stripeId
+    console.log(`Existing Stripe ID: ${stripeAccountId}`)
+
+    if (stripeAccountId) {
+      try {
+        const account = await stripe.accounts.retrieve(stripeAccountId)
+        console.log('Stripe Account verified:', account.id)
+      } catch (error) {
+        console.error('Stripe Account invalid or deleted:', error)
+        stripeAccountId = null
+      }
+    }
 
     // 1. Create account only if it doesn't exist
     if (!stripeAccountId) {
+      console.log('Creating new Stripe Account...')
       const account = await stripe.accounts.create({
-        type: 'express',
-        country: 'US', // Default to US, change if your app supports others
+        type: 'standard',
+        country: 'US',
         email: user.emailAddresses[0].emailAddress,
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
       })
+      console.log(`Stripe Account Created: ${account.id}`)
 
       stripeAccountId = account.id
 
@@ -52,24 +66,30 @@ export async function POST() {
         where: { clerkId: user.id },
         data: { stripeId: stripeAccountId },
       })
+      console.log('Stripe ID saved to DB')
     }
 
     // 3. Create account link for onboarding (idempotent action)
     const origin =
       process.env.NEXT_PUBLIC_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    
+    console.log(`Generating Link for Origin: ${origin}`)
+    
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
       refresh_url: `${origin}/callback/stripe/refresh`,
       return_url: `${origin}/callback/stripe/success`,
       type: 'account_onboarding',
     })
+    
+    console.log(`Link Generated: ${accountLink.url}`)
 
     return NextResponse.json({
       url: accountLink.url,
     })
-  } catch (error) {
-    console.error('Stripe connect error:', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
+  } catch (error: any) {
+    console.error('Stripe connect error (FULL):', error)
+    return new NextResponse(JSON.stringify({ error: error.message, details: error }), { status: 500 })
   }
 }
