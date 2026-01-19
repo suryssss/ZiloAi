@@ -100,8 +100,17 @@ export const useChatBot = () => {
       console.log(e.data)
       const botid = e.data
       if (limitRequest.current < 1 && typeof botid == 'string') {
-        onGetDomainChatBot(botid)
-        limitRequest.current++
+        const cleanId = botid.replace(/^["']+|["']$/g, '')
+        // Validate UUID format (8-4-4-4-12 hex digits)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        
+        if (uuidRegex.test(cleanId)) {
+           console.log('Sending valid UUID:', cleanId)
+           onGetDomainChatBot(cleanId)
+           limitRequest.current++
+        } else {
+           console.error('Invalid UUID format received:', cleanId)
+        }
       }
     })
   }, [])
