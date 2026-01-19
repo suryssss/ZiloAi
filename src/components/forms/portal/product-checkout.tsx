@@ -29,11 +29,12 @@ const PaymentCheckout = ({
   products,
   stripeId,
 }: Props) => {
-  const StripePromise = loadStripe(
-    process.env.NEXT_PUBLIC_STRIPE_PUBLISH_KEY!,
-    {
-      stripeAccount: stripeId!,
-    }
+  const StripePromise = React.useMemo(
+    () =>
+      loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISH_KEY!, {
+        stripeAccount: stripeId!,
+      }),
+    [stripeId]
   )
   const { stripeSecret, loadForm } = useStripeCustomer(amount!, stripeId!)
 
