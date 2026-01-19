@@ -3,15 +3,20 @@ import { currentUser } from '@clerk/nextjs'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
+// This ensures the route is never statically generated at build time
 export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET!, {
-  typescript: true,
-  apiVersion: '2024-04-10',
-})
 
 export async function POST() {
+  const stripeSecret = process.env.STRIPE_SECRET
+  if (!stripeSecret) {
+      return new NextResponse('Stripe not configured', { status: 500 })
+  }
+  
+  const stripe = new Stripe(stripeSecret, {
+    typescript: true,
+    apiVersion: '2024-04-10',
+  })
+
   try {
     const user = await currentUser()
     if (!user) {
@@ -50,7 +55,9 @@ export async function POST() {
     }
 
     // 3. Create account link for onboarding (idempotent action)
-    const origin = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'
+    const origin =
+      process.env.NEXT_PUBLIC_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
       refresh_url: `${origin}/callback/stripe/refresh`,

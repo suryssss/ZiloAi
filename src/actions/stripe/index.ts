@@ -14,6 +14,10 @@ export const onCreateCustomerPaymentIntentSecret = async (
   stripeId: string
 ) => {
   try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET!, {
+      typescript: true,
+      apiVersion: '2024-04-10',
+    })
     const paymentIntent = await stripe.paymentIntents.create(
       {
         currency: 'usd',
@@ -87,6 +91,10 @@ export const onGetStripeClientSecret = async (
   item: 'STANDARD' | 'PRO' | 'ULTIMATE'
 ) => {
   try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET!, {
+      typescript: true,
+      apiVersion: '2024-04-10',
+    })
     const amount = setPlanAmount(item)
     const paymentIntent = await stripe.paymentIntents.create({
       currency: 'usd',
