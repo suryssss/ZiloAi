@@ -35,16 +35,15 @@ const useSideBar = () => {
     }
   }
 
-  const onGetCurrentMode = async () => {
-    setLoading(true)
-    const mode = await onGetConversationMode(chatRoom!)
-    if (mode) {
-      setRealtime(mode.live)
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    const onGetCurrentMode = async () => {
+      setLoading(true)
+      const mode = await onGetConversationMode(chatRoom!)
+      if (mode) {
+        setRealtime(mode.live)
+        setLoading(false)
+      }
+    }
     if (chatRoom) {
       onGetCurrentMode()
     }

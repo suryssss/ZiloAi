@@ -19,7 +19,7 @@ export const useStripe = () => {
   const onStripeConnect = async () => {
     try {
       setOnStripeAccountPending(true)
-      const account = await axios.get(`/api/stripe/connect`)
+      const account = await axios.post(`/api/stripe/connect`)
       if (account) {
         setOnStripeAccountPending(false)
         if (account) {
@@ -37,22 +37,22 @@ export const useStripeCustomer = (amount: number, stripeId: string) => {
   const [stripeSecret, setStripeSecret] = useState<string>('')
   const [loadForm, setLoadForm] = useState<boolean>(false)
 
-  const onGetCustomerIntent = async (amount: number) => {
-    try {
-      setLoadForm(true)
-      const intent = await onCreateCustomerPaymentIntentSecret(amount, stripeId)
-      if (intent) {
-        setLoadForm(false)
-        setStripeSecret(intent.secret!)
-      }
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
   useEffect(() => {
+    const onGetCustomerIntent = async (amount: number) => {
+      try {
+        setLoadForm(true)
+        const intent = await onCreateCustomerPaymentIntentSecret(amount, stripeId)
+        if (intent) {
+          setLoadForm(false)
+          setStripeSecret(intent.secret!)
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    }
+
     onGetCustomerIntent(amount)
-  }, [])
+  }, [amount, stripeId])
 
   return { stripeSecret, loadForm }
 }
@@ -77,7 +77,7 @@ export const useCompleteCustomerPayment = (onNext: () => void) => {
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: 'http://localhost:3000/settings',
+          return_url: `${window.location.origin}/settings`,
         },
         redirect: 'if_required',
       })
@@ -182,7 +182,7 @@ export const useCompletePayment = (
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: 'http://localhost:3000/settings',
+          return_url: `${window.location.origin}/settings`,
         },
         redirect: 'if_required',
       })

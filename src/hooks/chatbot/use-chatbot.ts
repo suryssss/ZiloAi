@@ -77,7 +77,7 @@ export const useChatBot = () => {
     )
   }, [botOpened])
 
-  let limitRequest = 0
+  const limitRequest = useRef(0)
 
   const onGetDomainChatBot = async (id: string) => {
     setCurrentBotId(id)
@@ -99,9 +99,9 @@ export const useChatBot = () => {
     window.addEventListener('message', (e) => {
       console.log(e.data)
       const botid = e.data
-      if (limitRequest < 1 && typeof botid == 'string') {
+      if (limitRequest.current < 1 && typeof botid == 'string') {
         onGetDomainChatBot(botid)
-        limitRequest++
+        limitRequest.current++
       }
     })
   }, [])
@@ -230,5 +230,5 @@ export const useRealTime = (
       pusherClient.unbind('realtime-mode')
       pusherClient.unsubscribe(chatRoom)
     }
-  }, [])
+  }, [chatRoom, setChats])
 }
