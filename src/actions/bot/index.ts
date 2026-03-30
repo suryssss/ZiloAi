@@ -9,6 +9,7 @@ import OpenAi from 'openai'
 
 const openai = new OpenAi({
   apiKey: process.env.OPEN_AI_KEY,
+  baseURL: 'https://api.groq.com/openai/v1',
 })
 
 export const onStoreConversations = async (
@@ -243,7 +244,7 @@ export const onAiChatBotAssistant = async (
               content: message,
             },
           ],
-          model: 'gpt-3.5-turbo',
+          model: 'llama-3.3-70b-versatile',
         })
 
         if (chatCompletion.choices[0].message.content?.includes('(realtime)')) {
@@ -355,7 +356,7 @@ export const onAiChatBotAssistant = async (
             content: message,
           },
         ],
-        model: 'gpt-3.5-turbo',
+        model: 'llama-3.3-70b-versatile',
       })
 
       if (chatCompletion) {

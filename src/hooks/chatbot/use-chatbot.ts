@@ -108,9 +108,8 @@ export const useChatBot = () => {
            console.log('Sending valid UUID:', cleanId)
            onGetDomainChatBot(cleanId)
            limitRequest.current++
-        } else {
-           console.error('Invalid UUID format received:', cleanId)
         }
+
       }
     })
   }, [])

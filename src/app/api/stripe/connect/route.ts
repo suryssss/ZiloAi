@@ -48,8 +48,6 @@ export async function POST() {
         stripeAccountId = null
       }
     }
-
-    // 1. Create account only if it doesn't exist
     if (!stripeAccountId) {
       console.log('Creating new Stripe Account...')
       const account = await stripe.accounts.create({
@@ -60,16 +58,12 @@ export async function POST() {
       console.log(`Stripe Account Created: ${account.id}`)
 
       stripeAccountId = account.id
-
-      // 2. Save it immediately
       await client.user.update({
         where: { clerkId: user.id },
         data: { stripeId: stripeAccountId },
       })
       console.log('Stripe ID saved to DB')
     }
-
-    // 3. Create account link for onboarding (idempotent action)
     const origin =
       process.env.NEXT_PUBLIC_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
