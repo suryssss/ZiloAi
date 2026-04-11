@@ -16,7 +16,7 @@ const SubscriptionForm = ({ plan }: Props) => {
 
   return (
     <Loader loading={loading}>
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto pr-2">
         <div className="flex flex-col gap-3">
           <SubscriptionCard
             title="STANDARD"

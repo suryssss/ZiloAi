@@ -71,8 +71,8 @@ const BookAppointmentDate = ({
                   bookings &&
                     bookings.some(
                       (booking) =>
-                        `${booking.date.getDate()}/${booking.date.getMonth()}` ===
-                          `${date?.getDate()}/${date?.getMonth()}` &&
+                        new Date(booking.date).toDateString() ===
+                          date?.toDateString() &&
                         booking.slot == slot.slot
                     )
                     ? 'bg-gray-300'
@@ -83,7 +83,7 @@ const BookAppointmentDate = ({
                   {...(bookings &&
                   bookings.some(
                     (booking) =>
-                      booking.date == date && booking.slot == slot.slot
+                      new Date(booking.date).toDateString() === date?.toDateString() && booking.slot == slot.slot
                   )
                     ? {
                         disabled: true,

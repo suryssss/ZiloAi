@@ -84,17 +84,29 @@ export const useEmailMarketing = () => {
   const onAddCustomersToCampaign = async () => {
     try {
       setProcessing(true)
-      const customersAdd = await onAddCustomersToEmail(isSelected, campaignId!)
-      if (customersAdd) {
+      if (!campaignId) {
+        toast({
+          title: 'Error',
+          description: 'Please select a campaign first by clicking on it.',
+        })
+        setProcessing(false)
+        return
+      }
+      const customersAdd = await onAddCustomersToEmail(isSelected, campaignId)
+      if (customersAdd && customersAdd.status === 200) {
         toast({
           title: 'Success',
           description: customersAdd.message,
         })
         setProcessing(false)
         setCampaignId(undefined)
+        setIsSelected([])
         router.refresh()
+      } else {
+        setProcessing(false)
       }
     } catch (error) {
+      setProcessing(false)
       console.log(error)
     }
   }
@@ -168,6 +180,7 @@ export const useAnswers = (id: string) => {
           setAnswers(answer)
         }
       } catch (error) {
+        setLoading(false)
         console.log(error)
       }
     }

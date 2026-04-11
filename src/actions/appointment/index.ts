@@ -1,7 +1,7 @@
 'use server'
 
 import { client } from '@/lib/prisma'
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 
 export const onDomainCustomerResponses = async (customerId: string) => {
   try {
@@ -57,6 +57,7 @@ export const onBookNewAppointment = async (
   email: string
 ) => {
   try {
+    console.log('Attempting to create booking for:', {domainId, customerId, slot, date, email})
     const booking = await client.customer.update({
       where: {
         id: customerId,
@@ -66,18 +67,20 @@ export const onBookNewAppointment = async (
           create: {
             domainId,
             slot,
-            date,
+            date: new Date(date as any),
             email,
           },
         },
       },
     })
+    console.log('Successfully created booking:', booking)
 
     if (booking) {
       return { status: 200, message: 'Booking created' }
     }
   } catch (error) {
-    console.log(error)
+    console.error('SERVER ACTION ERROR - onBookNewAppointment:', error)
+    return { status: 400, message: 'Failed to create booking: ' + (error as any).message }
   }
 }
 
@@ -108,7 +111,7 @@ export const saveAnswers = async (
       messege: 'Updated Responses',
     }
   } catch (error) {
-    console.log(error)
+    console.error('SERVER ACTION ERROR - saveAnswers:', error)
   }
 }
 

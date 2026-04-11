@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot Embed Test</title>
+    <style>
+        body { font-family: sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f0f0; }
+        .chat-frame {
+            position: fixed;
+            bottom: 50px;
+            right: 50px;
+            border: none;
+            width: 400px; /* Expand out when clicked */
+            height: 600px; 
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chatbot Integration UI Test</h1>
+    <p>The chatbot should be visible in the bottom right corner (a circular icon or bot avatar).</p>
+    <p>This page acts as a "third-party website" that embeds your Zilo AI bot.</p>
+
+    <script>
+        // Use the Domain ID you want to test
+        const DOMAIN_ID = 'c1055d91-5146-4bec-a351-58356b2f1739'; 
+        const CHATBOT_URL = 'http://localhost:3000'; // Make sure your Next.js app is running on 3000
+
+        const iframe = document.createElement("iframe");
+        iframe.src = CHATBOT_URL + "/chatbot";
+        iframe.classList.add('chat-frame');
+        document.body.appendChild(iframe);
+
+        // This listener waits for the chatbot to render and ping us, or we just send it dimensions
+        window.addEventListener("message", (e) => {
+            if(e.origin !== CHATBOT_URL) return;
+            try {
+                let dimensions = JSON.parse(e.data);
+                // Adjust iframe size based on whether it's opened or closed
+                if (dimensions.width) iframe.style.width = dimensions.width + "px";
+                if (dimensions.height) iframe.style.height = dimensions.height + "px";
+                
+                // IMPORTANT: Send the Domain ID back into the iframe so the bot knows who it belongs to
+                iframe.contentWindow.postMessage(DOMAIN_ID, CHATBOT_URL + "/");
+            } catch (err) {
+                // Not a valid JSON payload from our bot
+            }
+        });
+    </script>
+</body>
+</html>

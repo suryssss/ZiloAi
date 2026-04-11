@@ -1,7 +1,7 @@
 'use server'
 
 import { client } from '@/lib/prisma'
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 import Stripe from 'stripe'
 
 
@@ -40,13 +40,14 @@ export const getUserBalance = async () => {
         },
       })
 
-      if (connectedStripe) {
-        const stripe = new Stripe(process.env.STRIPE_SECRET!, {
+      if (connectedStripe && connectedStripe.stripeId) {
+        if (!process.env.STRIPE_SECRET) return null
+        const stripe = new Stripe(process.env.STRIPE_SECRET, {
           typescript: true,
           apiVersion: '2024-04-10',
         })
         const transactions = await stripe.balance.retrieve({
-          stripeAccount: connectedStripe.stripeId!,
+          stripeAccount: connectedStripe.stripeId,
         })
 
         if (transactions) {
@@ -141,13 +142,14 @@ export const getUserTransactions = async () => {
         },
       })
 
-      if (connectedStripe) {
-        const stripe = new Stripe(process.env.STRIPE_SECRET!, {
+      if (connectedStripe && connectedStripe.stripeId) {
+        if (!process.env.STRIPE_SECRET) return null
+        const stripe = new Stripe(process.env.STRIPE_SECRET, {
           typescript: true,
           apiVersion: '2024-04-10',
         })
         const transactions = await stripe.charges.list({
-          stripeAccount: connectedStripe.stripeId!,
+          stripeAccount: connectedStripe.stripeId,
         })
         if (transactions) {
           return transactions

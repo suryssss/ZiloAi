@@ -3,7 +3,7 @@
 import { client } from '@/lib/prisma'
 import { extractEmailsFromString, extractURLfromString } from '@/lib/utils'
 import { onRealTimeChat } from '../conversation'
-import { clerkClient } from '@clerk/nextjs'
+import { clerkClient } from '@clerk/nextjs/server'
 import { onMailer } from '../mailer'
 import OpenAi from 'openai'
 
@@ -62,8 +62,6 @@ export const onGetCurrentChatBot = async (id: string) => {
   }
 }
 
-let customerEmail: string | undefined
-
 export const onAiChatBotAssistant = async (
   id: string,
   chat: { role: 'assistant' | 'user'; content: string }[],
@@ -71,12 +69,24 @@ export const onAiChatBotAssistant = async (
   message: string
 ) => {
   try {
+    // Sanitize chat history to only include role and content (API throws error on custom fields like 'link')
+    const sanitizedChat = chat.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }))
+
     const chatBotDomain = await client.domain.findUnique({
       where: {
         id,
       },
       select: {
         name: true,
+        helpdesk: {
+          select: {
+            question: true,
+            answer: true,
+          },
+        },
         filterQuestions: {
           where: {
             answered: null,
@@ -88,9 +98,21 @@ export const onAiChatBotAssistant = async (
       },
     })
     if (chatBotDomain) {
+      let customerEmail: string | undefined
       const extractedEmail = extractEmailsFromString(message)
       if (extractedEmail) {
         customerEmail = extractedEmail[0]
+      }
+
+      // Also check previous chat messages for email
+      if (!customerEmail) {
+        for (const msg of chat) {
+          const found = extractEmailsFromString(msg.content)
+          if (found) {
+            customerEmail = found[0]
+            break
+          }
+        }
       }
 
       if (customerEmail) {
@@ -167,7 +189,7 @@ export const onAiChatBotAssistant = async (
             checkCustomer.customer[0].chatRoom[0].id,
             message,
             'user',
-            author
+            'user'
           )
 
           if (!checkCustomer.customer[0].chatRoom[0].mailed) {
@@ -209,7 +231,7 @@ export const onAiChatBotAssistant = async (
         const chatCompletion = await openai.chat.completions.create({
           messages: [
             {
-              role: 'assistant',
+              role: 'system',
               content: `
               You will get an array of questions that you must ask the customer. 
               
@@ -227,6 +249,10 @@ export const onAiChatBotAssistant = async (
                 .map((questions) => questions.question)
                 .join(', ')}]
 
+              Help Desk Knowledge Base (FAQs) : [${chatBotDomain.helpdesk
+                .map((faq) => `Q: ${faq.question} A: ${faq.answer}`)
+                .join(', ')}]
+
               if the customer says something out of context or inapporpriate. Simply say this is beyond you and you will get a real user to continue the conversation. And add a keyword (realtime) at the end.
 
               if the customer agrees to book an appointment send them this link ${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/portal/${id}/appointment/${
@@ -238,13 +264,13 @@ export const onAiChatBotAssistant = async (
               }
           `,
             },
-            ...chat,
+            ...sanitizedChat,
             {
               role: 'user',
               content: message,
             },
           ],
-          model: 'llama-3.3-70b-versatile',
+          model: 'llama-3.1-8b-instant',
         })
 
         if (chatCompletion.choices[0].message.content?.includes('(realtime)')) {
@@ -275,7 +301,7 @@ export const onAiChatBotAssistant = async (
             return { response }
           }
         }
-        if (chat[chat.length - 1].content.includes('(complete)')) {
+        if (chat.length > 0 && chat[chat.length - 1].content.includes('(complete)')) {
           const firstUnansweredQuestion =
             await client.customerResponses.findFirst({
               where: {
@@ -307,11 +333,11 @@ export const onAiChatBotAssistant = async (
           )
 
           if (generatedLink) {
-            const link = generatedLink[0]
+            const link = generatedLink[0].replace(/[.,!?]+$/, '')
             const response = {
               role: 'assistant',
               content: `Great! you can follow the link to proceed`,
-              link: link.slice(0, -1),
+              link,
             }
 
             await onStoreConversations(
@@ -337,26 +363,29 @@ export const onAiChatBotAssistant = async (
           return { response }
         }
       }
-      console.log('No customer')
+      console.log('No customer found, starting lead generation flow')
       const chatCompletion = await openai.chat.completions.create({
         messages: [
           {
-            role: 'assistant',
+            role: 'system',
             content: `
-            You are a highly knowledgeable and experienced sales representative for a ${chatBotDomain.name} that offers a valuable product or service. Your goal is to have a natural, human-like conversation with the customer in order to understand their needs, provide relevant information, and ultimately guide them towards making a purchase or redirect them to a link if they havent provided all relevant information.
-            Right now you are talking to a customer for the first time. Start by giving them a warm welcome on behalf of ${chatBotDomain.name} and make them feel welcomed.
+            You are a helpful sales representative for ${chatBotDomain.name}. 
 
-            Your next task is lead the conversation naturally to get the customers email address. Be respectful and never break character
-
+            RULES:
+            1. Be extremely concise. Max 2 sentences per response. 
+            2. Naturally ask for their email address to get started.
+            3. Answer questions briefly using these FAQs: [${chatBotDomain.helpdesk
+              .map((faq) => `Q: ${faq.question} A: ${faq.answer}`)
+              .join(', ')}]
           `,
           },
-          ...chat,
+          ...sanitizedChat,
           {
             role: 'user',
             content: message,
           },
         ],
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
       })
 
       if (chatCompletion) {
@@ -369,6 +398,12 @@ export const onAiChatBotAssistant = async (
       }
     }
   } catch (error) {
-    console.log(error)
+    console.log('🔴 CHATBOT ERROR:', error)
+    return {
+      response: {
+        role: 'assistant',
+        content: "I'm sorry, I encountered an error. Could you try again or contact support?",
+      }
+    }
   }
 }

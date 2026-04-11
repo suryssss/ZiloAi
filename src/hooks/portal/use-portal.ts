@@ -4,7 +4,7 @@ import {
   saveAnswers,
 } from '@/actions/appointment'
 import { useToast } from '@/components/ui/use-toast'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 export const usePortal = (
@@ -17,26 +17,28 @@ export const usePortal = (
     setValue,
     formState: { errors },
     handleSubmit,
-  } = useForm()
+  } = useForm<any>()
   const { toast } = useToast()
   const [step, setStep] = useState<number>(1)
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [selectedSlot, setSelectedSlot] = useState<string | undefined>('')
   const [loading, setLoading] = useState<boolean>(false)
 
-  setValue('date', date)
+  useEffect(() => {
+    setValue('date', date)
+  }, [date, setValue])
 
-  const onNext = () => setStep((prev) => prev + 1)
+  const onNext = useCallback(() => setStep((prev) => prev + 1), [])
 
-  const onPrev = () => setStep((prev) => prev - 1)
+  const onPrev = useCallback(() => setStep((prev) => prev - 1), [])
 
-  const onBookAppointment = handleSubmit(async (values) => {
+  const onBookAppointment = handleSubmit(async (values: any) => {
     try {
       setLoading(true)
-      const questions = Object.keys(values)
+      const questions = Object.keys(values || {})
         .filter((key) => key.startsWith('question'))
         .reduce((obj: any, key) => {
-          obj[key.split('question-')[1]] = values[key]
+          obj[key.split('question-')[1]] = values?.[key]
           return obj
         }, {})
 
@@ -46,8 +48,8 @@ export const usePortal = (
         const booked = await onBookNewAppointment(
           domainId,
           customerId,
-          values.slot,
-          values.date,
+          values?.slot,
+          values?.date,
           email
         )
         if (booked && booked.status == 200) {
@@ -56,6 +58,12 @@ export const usePortal = (
             description: booked.message,
           })
           setStep(3)
+        } else if (booked && booked.status === 400) {
+          toast({
+            title: 'Error',
+            description: booked.message,
+            variant: 'destructive',
+          })
         }
 
         setLoading(false)
@@ -79,3 +87,4 @@ export const usePortal = (
     selectedSlot,
   }
 }
+

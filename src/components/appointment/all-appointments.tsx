@@ -26,25 +26,25 @@ type Props = {
 const AllAppointments = ({ bookings }: Props) => {
   return (
     <DataTable headers={APPOINTMENT_TABLE_HEADER}>
-      {bookings ? (
+      {bookings && bookings.length > 0 ? (
         bookings.map((booking) => (
           <TableRow key={booking.id}>
             <TableCell>{booking.email}</TableCell>
             <TableCell>
               <div>
-                {getMonthName(booking.date.getMonth())} {booking.date.getDate()}{' '}
-                {booking.date.getFullYear()}
+                {getMonthName(new Date(booking.date).getMonth())} {new Date(booking.date).getDate()}{' '}
+                {new Date(booking.date).getFullYear()}
               </div>
               <div className="uppercase">{booking.slot}</div>
             </TableCell>
             <TableCell>
               <div>
-                {getMonthName(booking.createdAt.getMonth())}{' '}
-                {booking.createdAt.getDate()} {booking.createdAt.getFullYear()}
+                {getMonthName(new Date(booking.createdAt).getMonth())}{' '}
+                {new Date(booking.createdAt).getDate()} {new Date(booking.createdAt).getFullYear()}
               </div>
               <div>
-                {booking.createdAt.getHours()} {booking.createdAt.getMinutes()}{' '}
-                {booking.createdAt.getHours() > 12 ? 'PM' : 'AM'}
+                {new Date(booking.createdAt).getHours()} {new Date(booking.createdAt).getMinutes()}{' '}
+                {new Date(booking.createdAt).getHours() > 12 ? 'PM' : 'AM'}
               </div>
             </TableCell>
             <TableCell className="text-right">

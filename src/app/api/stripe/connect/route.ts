@@ -1,10 +1,9 @@
+export const dynamic = 'force-dynamic'
+
 import { client } from '@/lib/prisma'
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-
-// This ensures the route is never statically generated at build time
-export const dynamic = 'force-dynamic'
 
 export async function POST() {
   console.log('--- STRIPE CONNECT START ---')

@@ -1,7 +1,7 @@
 'use server'
 
 import { client } from '@/lib/prisma'
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 import nodemailer from 'nodemailer'
 
 export const onGetAllCustomers = async (id: string) => {
@@ -131,7 +131,10 @@ export const onAddCustomersToEmail = async (
     if (customerAdd) {
       return { status: 200, message: 'Customer added to campaign' }
     }
-  } catch (error) {}
+  } catch (error) {
+    console.log('Error adding customer to campaign:', error)
+    return { status: 400, message: 'Failed to add customer' }
+  }
 }
 
 export const onBulkMailer = async (email: string[], campaignId: string) => {

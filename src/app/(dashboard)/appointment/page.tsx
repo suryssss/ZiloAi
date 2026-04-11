@@ -5,7 +5,7 @@ import Section from '@/components/section-label'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 import React from 'react'
 
 export const dynamic = 'force-dynamic'
@@ -16,6 +16,9 @@ const Page = async (props: Props) => {
   const user = await currentUser()
 
   if (!user) return null
+
+  console.log('--- DASHBOARD SESSION DIAGNOSTIC ---');
+  console.log('Logged in user ID watching the dashboard:', user.id);
   
   const domainBookings = await onGetAllBookingsForCurrentUser(user.id)
   const today = new Date()
@@ -28,14 +31,14 @@ const Page = async (props: Props) => {
     )
 
   const bookingsExistToday = domainBookings.bookings.filter(
-    (booking) => booking.date.getDate() === today.getDate()
+    (booking) => new Date(booking.date).getDate() === today.getDate()
   )
 
   return (
     <>
       <InfoBar />
       <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 h-0 gap-5">
-        <div className="lg:col-span-2 overflow-y-auto">
+        <div className="lg:col-span-2 overflow-y-auto w-full">
           <AllAppointments bookings={domainBookings?.bookings} />
         </div>
         <div className="col-span-1">
@@ -58,9 +61,9 @@ const Page = async (props: Props) => {
                       <p className="text-sm">
                         created
                         <br />
-                        {booking.createdAt.getHours()}{' '}
-                        {booking.createdAt.getMinutes()}{' '}
-                        {booking.createdAt.getHours() > 12 ? 'PM' : 'AM'}
+                        {new Date(booking.createdAt).getHours()}{' '}
+                        {new Date(booking.createdAt).getMinutes()}{' '}
+                        {new Date(booking.createdAt).getHours() > 12 ? 'PM' : 'AM'}
                       </p>
                       <p className="text-sm">
                         Domain <br />
@@ -79,7 +82,7 @@ const Page = async (props: Props) => {
               </Card>
             ))
           ) : (
-            <div className="w-full flex justify-center">
+            <div className="w-full flex justify-center mt-4">
               <p>No Appointments For Today</p>
             </div>
           )}

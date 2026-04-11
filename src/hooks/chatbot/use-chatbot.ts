@@ -71,8 +71,8 @@ export const useChatBot = () => {
   useEffect(() => {
     postToParent(
       JSON.stringify({
-        width: botOpened ? 550 : 80,
-        height: botOpened ? 800 : 80,
+        width: botOpened ? 470 : 56,
+        height: botOpened ? 800 : 56,
       })
     )
   }, [botOpened])
@@ -115,77 +115,64 @@ export const useChatBot = () => {
   }, [])
 
   const onStartChatting = handleSubmit(async (values) => {
-    console.log('ALL VALUES', values)
+    if (!currentBotId) return
 
-    if (values.image.length) {
-      console.log('IMAGE fROM ', values.image[0])
-      const uploaded = await upload.uploadFile(values.image[0])
-      if (!onRealTime?.mode) {
-        setOnChats((prev: any) => [
-          ...prev,
-          {
-            role: 'user',
-            content: uploaded.uuid,
-          },
-        ])
+    let currentMessages = [...onChats]
+
+    try {
+      if (values.image?.length) {
+        setLoading(true)
+        const uploaded = await upload.uploadFile(values.image[0])
+        const imageMessage = {
+          role: 'user' as const,
+          content: uploaded.uuid,
+        }
+
+        if (!onRealTime?.mode) {
+          setOnChats((prev) => [...prev, imageMessage])
+          currentMessages.push(imageMessage)
+        }
       }
 
-      console.log('🟡 RESPONSE FROM UC', uploaded.uuid)
+      if (values.content) {
+        const textMessage = {
+          role: 'user' as const,
+          content: values.content,
+        }
+
+        if (!onRealTime?.mode) {
+          setOnChats((prev) => [...prev, textMessage])
+          currentMessages.push(textMessage)
+        }
+      }
+
       setOnAiTyping(true)
+      const lastMessage = values.content || (values.image?.length ? 'Image uploaded' : '')
+      
       const response = await onAiChatBotAssistant(
-        currentBotId!,
-        onChats,
+        currentBotId,
+        currentMessages,
         'user',
-        uploaded.uuid
+        lastMessage
       )
 
       if (response) {
-        setOnAiTyping(false)
         if (response.live) {
           setOnRealTime((prev) => ({
             ...prev,
             chatroom: response.chatRoom,
             mode: response.live,
           }))
-        } else {
+        } else if (response.response) {
           setOnChats((prev: any) => [...prev, response.response])
         }
       }
-    }
-    reset()
-
-    if (values.content) {
-      if (!onRealTime?.mode) {
-        setOnChats((prev: any) => [
-          ...prev,
-          {
-            role: 'user',
-            content: values.content,
-          },
-        ])
-      }
-
-      setOnAiTyping(true)
-
-      const response = await onAiChatBotAssistant(
-        currentBotId!,
-        onChats,
-        'user',
-        values.content
-      )
-
-      if (response) {
-        setOnAiTyping(false)
-        if (response.live) {
-          setOnRealTime((prev) => ({
-            ...prev,
-            chatroom: response.chatRoom,
-            mode: response.live,
-          }))
-        } else {
-          setOnChats((prev: any) => [...prev, response.response])
-        }
-      }
+    } catch (error) {
+      console.error('Chat error:', error)
+    } finally {
+      setOnAiTyping(false)
+      setLoading(false)
+      reset()
     }
   })
 
@@ -220,6 +207,8 @@ export const useRealTime = (
   const counterRef = useRef(1)
 
   useEffect(() => {
+    if (!pusherClient) return
+
     pusherClient.subscribe(chatRoom)
     pusherClient.bind('realtime-mode', (data: any) => {
       console.log('✅', data)
